@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -32,21 +33,49 @@ func main() {
 		log.Fatal(err)
 	}
 	codes := strings.Split(line, ",")
+
+	noun := 0
+	verb := 0
+
+	for verb != 100 {
+		res, err := compute(noun, verb, codes)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		if res == 19690720 {
+			fmt.Println("found it")
+			fmt.Printf("noun: %d, verb: %d\n", noun, verb)
+			fmt.Printf("What is 100 * noun + verb = %d", 100*noun+verb)
+			return
+		}
+		noun++
+		if math.Mod(float64(noun), 100) == 0 {
+			noun = 0
+			verb++
+		}
+	}
+	fmt.Println("no solution found")
+}
+
+func compute(i1, i2 int, codes []string) (int, error) {
 	code := []int{}
 	for _, j := range codes {
 		i, err := strconv.Atoi(j)
 		if err != nil {
-			fmt.Printf("Error converting string to int %v\n", j)
+			s := fmt.Sprintf("Error converting string to int %v\n", j)
+			return 0, errors.New(s)
 		}
 		code = append(code, i)
 	}
+
+	code[1] = i1
+	code[2] = i2
 
 	var opCode int
 	var op1 int
 	var op2 int
 	var pntRes int
-
-	fmt.Println(code)
 
 	opCode = 0
 	for {
@@ -54,26 +83,20 @@ func main() {
 		op1 = opCode + 1
 		op2 = opCode + 2
 		pntRes = opCode + 3
-		if code[opCode] != 99 {
-			fmt.Printf("%d, %d, %d, %d\n", code[opCode], code[op1], code[op2], code[pntRes])
-		}
 
 		f := operation(code[opCode])
 		if code[opCode] == 99 {
 			break
 		}
 		res, err := f(code[code[op1]], code[code[op2]])
-		fmt.Printf("res: %d\n", res)
 		if err != nil {
-			fmt.Println(err)
-			return
+			s := fmt.Sprintln(err)
+			return 0, errors.New(s)
 		}
-		fmt.Printf("save %d in %d\n", res, pntRes)
 		code[code[pntRes]] = res
 		opCode = opCode + 4
-		fmt.Println(code)
 	}
-
+	return code[0], nil
 }
 
 func operation(opCode int) func(num1, num2 int) (int, error) {
